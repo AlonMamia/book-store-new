@@ -2,7 +2,8 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "cli": {
-    "packageManager": "npm"
+    "packageManager": "npm",
+    "analytics": false
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -29,12 +30,16 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.scss"
-            ]
+            "styles": ["src/styles.scss"]
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.local.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ],
               "budgets": [
                 {
                   "type": "initial",
@@ -49,10 +54,29 @@
               ],
               "outputHashing": "all"
             },
-            "development": {
+            "local": {
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "dev": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.local.ts",
+                  "with": "src/environments/environment.dev.ts"
+                }
+              ],
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            },
+            "pp": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.local.ts",
+                  "with": "src/environments/environment.pp.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -63,11 +87,17 @@
             "production": {
               "buildTarget": "book-store-new:build:production"
             },
-            "development": {
-              "buildTarget": "book-store-new:build:development"
+            "local": {
+              "buildTarget": "book-store-new:build:local"
+            },
+            "dev": {
+              "buildTarget": "book-store-new:build:dev"
+            },
+            "pp": {
+              "buildTarget": "book-store-new:build:pp"
             }
           },
-          "defaultConfiguration": "development"
+          "defaultConfiguration": "local"
         },
         "test": {
           "builder": "@angular/build:unit-test"
