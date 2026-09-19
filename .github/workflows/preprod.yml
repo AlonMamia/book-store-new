@@ -1,0 +1,29 @@
+name: CI - Preprod
+
+on:
+  push:
+    branches: [pp]
+  workflow_dispatch: {}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: preprod
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.20.0'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests
+        run: npm test --silent
+      - name: Build
+        run: npm run build --if-present
+      - name: Deploy to preprod
+        run: |
+          echo "Deploying to preprod..."
+          # Add real deployment commands here (e.g., rsync, scp, cloud CLI)
+        env:
+          NODE_ENV: production

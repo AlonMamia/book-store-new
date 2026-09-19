@@ -1,0 +1,17 @@
+@if (userState.isAuthenticated()) {
+  <span>
+  Hello {{userState.user()?.firstName}}
+</span>
+}
+  <button pButton (click)="logout()" >logout</button>
+
+
+
+
+
+<!--<div>-->
+<!--  @for (book of books; track book.id) {-->
+<!--    <book-list-item [book]="book" />-->
+<!--  }-->
+
+<!--</div>-->

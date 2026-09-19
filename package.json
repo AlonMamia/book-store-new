@@ -3,9 +3,17 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve --configuration local",
+    "start:local": "ng serve --configuration local",
+    "start:dev": "ng serve --configuration dev",
+    "start:pp": "ng serve --configuration pp",
+    "start:prod": "ng serve --configuration production",
     "build": "ng build",
-    "watch": "ng build --watch --configuration development",
+    "build:local": "ng build --configuration local",
+    "build:dev": "ng build --configuration dev",
+    "build:pp": "ng build --configuration pp",
+    "build:prod": "ng build --configuration production",
+    "watch": "ng build --watch --configuration local",
     "test": "ng test"
   },
   "private": true,
@@ -17,6 +25,8 @@
     "@angular/forms": "^22.1.0",
     "@angular/platform-browser": "^22.1.0",
     "@angular/router": "^22.1.0",
+    "@primeuix/themes": "^3.0.0",
+    "primeng": "^22.1.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
