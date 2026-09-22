@@ -1,9 +1,10 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/services/auth-service';
-import { forkJoin, tap } from 'rxjs';
+import { concatMap, tap } from 'rxjs';
 import { Role } from '../../../../core/auth/enums/Role';
-import { Utils } from '../../../../shared/utils/utils';
+import { UserState } from '../../services/user-state';
+import { Router } from '@angular/router';
 
 @Component({
   imports: [ReactiveFormsModule],
@@ -14,6 +15,8 @@ import { Utils } from '../../../../shared/utils/utils';
 export class Register {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly userState = inject(UserState);
+  private readonly router = inject(Router);
 
   readonly registerForm = this.formBuilder.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -54,7 +57,8 @@ export class Register {
       return;
     }
 
-    const { email, password, confirmPassword, firstName, lastName, dateOfBirth } = this.registerForm.getRawValue();
+    const { email, password, confirmPassword, firstName, lastName, dateOfBirth } =
+      this.registerForm.getRawValue();
 
     if (password !== confirmPassword) {
       this.confirmPassword.setErrors({
@@ -69,12 +73,19 @@ export class Register {
       password,
       firstName,
       lastName,
-      dateOfBirth: Utils.formatDateForApi(dateOfBirth),
-      role: Role.USER
+      dateOfBirth,
+      role: Role.USER,
     };
 
-    this.authService.register(registerRequest).subscribe(() => {
-      console.log('register request successfully');
-    });
+    this.authService
+      .register(registerRequest)
+      .pipe(
+        concatMap(() => this.authService.login({ email, password })),
+        tap((user) => {
+          this.userState.setUser(user);
+          this.router.navigate(['/books']);
+        }),
+      )
+      .subscribe();
   }
 }
