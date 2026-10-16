@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, Signal, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -7,24 +7,27 @@ import { UserState } from '../../../../user/services/user-state';
 import { BookListItem } from '../../../components/book-list-item/book-list-item';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../../../core/auth/services/auth-service';
-import { tap } from 'rxjs';
-
-interface Book {
-  id: number;
-  title: string;
-  author: string;
-  category: string;
-  price: number;
-  rating: number;
-  reviews: number;
-  status: 'Featured' | 'Bestseller' | 'New';
-  coverGradient: string;
-  shortLabel: string;
-}
+import { catchError, defer, filter, finalize, of, switchMap, tap } from 'rxjs';
+import { Select } from 'primeng/select';
+import { Category } from '../../../models/Category';
+import { BookService } from '../../../services/book-service';
+import { BookFilters, BookSearchRequest } from '../../../models/BookFilters';
+import { Paginator, PaginatorState } from 'primeng/paginator';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { InputText } from 'primeng/inputtext';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonModule, CardModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ButtonModule,
+    CardModule,
+    Select,
+    Paginator,
+    BookListItem,
+    InputText,
+  ],
   selector: 'app-book-dashboard',
   styleUrl: './book-dashboard.scss',
   templateUrl: './book-dashboard.html',
@@ -34,93 +37,122 @@ export class BookDashboard {
   private readonly authService = inject(AuthService);
 
   readonly userState = inject(UserState);
-  readonly books = signal<Book[]>([]);
+  private readonly bookService = inject(BookService);
+  readonly categories = Object.values(Category);
+  readonly sortCategories = ['author', 'price', 'title'];
+  readonly loading = signal(false);
+  readonly errorMessage = signal<string | null>(null);
+
+  private readonly requestToSend = signal<BookSearchRequest | null>(null);
+
+  searchQuery = signal<string>('');
+  category = signal<string>('');
+  minPrice = signal<number>(0);
+  maxPrice = signal<number>(0);
+  availableOnly = signal<boolean>(false);
+  sortBy = signal<'author' | 'price' | 'title'>('title');
+
+  page = signal<number>(0);
+  size = signal<number>(10);
+  direction = signal<'asc' | 'desc'>('asc');
 
   ngOnInit() {
     if (!this.userState.isAuthenticated()) {
       this.router.navigate(['']);
+    } else {
+      this.sendRequest();
     }
   }
 
   logout(): void {
-    this.authService.logout()
+    this.authService
+      .logout()
       .pipe(tap(() => this.userState.clearUser()))
       .subscribe(() => {
-      this.router.navigate(['']);
+        this.router.navigate(['']);
+      });
+  }
+
+  readonly bookFilter: Signal<BookFilters> = computed<BookFilters>(() => {
+    return {
+      query: this.searchQuery().trim(),
+      category: this.category() || null,
+      minPrice: this.minPrice(),
+      maxPrice: this.maxPrice(),
+      availableOnly: this.availableOnly(),
+    };
+  });
+
+  // readonly books = computed(
+  //   () => this.pageResponse()?.content ?? []
+  // );
+
+  readonly bookSearchRequest = computed<BookSearchRequest>(() => ({
+    filters: this.bookFilter(),
+    pageRequest: {
+      page: this.page(),
+      size: this.size(),
+      sort: this.sortBy(),
+      direction: this.direction(),
+    },
+  }));
+
+  private readonly requestToSend$ = toObservable(this.requestToSend);
+
+  private readonly pageResponse$ = this.requestToSend$.pipe(
+    filter((request): request is BookSearchRequest => request !== null),
+
+    switchMap((request) =>
+      defer(() => {
+        this.loading.set(true);
+        this.errorMessage.set(null);
+
+        return this.bookService.getFilteredBooks(request).pipe(
+          catchError((error) => {
+            console.error('Failed to load books', error);
+            this.errorMessage.set('Failed to load books');
+
+            return of(null);
+          }),
+
+          finalize(() => {
+            this.loading.set(false);
+          }),
+        );
+      }),
+    ),
+  );
+
+  readonly pageResponse = toSignal(this.pageResponse$, { initialValue: null });
+
+  readonly books = computed(() => this.pageResponse()?.content);
+
+  onPageChange(event: PaginatorState): void {
+    const newSize = event.rows ?? this.size();
+    const newPage = event.page ?? 0;
+
+    this.page.set(newPage);
+    this.size.set(newSize);
+
+    this.sendRequest();
+  }
+
+  handleSubmit(): void {
+    this.page.set(0);
+
+    this.sendRequest();
+  }
+
+  private sendRequest(): void {
+    const request = this.bookSearchRequest();
+
+    this.requestToSend.set({
+      filters: {
+        ...request.filters,
+      },
+      pageRequest: {
+        ...request.pageRequest,
+      },
     });
   }
-  // readonly books: Book[] = [
-  //   {
-  //     id: 1,
-  //     title: 'The Blue Hour',
-  //     author: 'Alicia Morgan',
-  //     category: 'Fiction',
-  //     price: 24,
-  //     rating: 4.9,
-  //     reviews: 326,
-  //     status: 'Featured',
-  //     coverGradient: 'linear-gradient(135deg, #dbeafe 0%, #60a5fa 100%)',
-  //     shortLabel: 'BH',
-  //   },
-  //   {
-  //     id: 2,
-  //     title: 'Designing for Calm',
-  //     author: 'Leo Hart',
-  //     category: 'Design',
-  //     price: 32,
-  //     rating: 4.8,
-  //     reviews: 241,
-  //     status: 'Bestseller',
-  //     coverGradient: 'linear-gradient(135deg, #d1fae5 0%, #34d399 100%)',
-  //     shortLabel: 'DC',
-  //   },
-  //   {
-  //     id: 3,
-  //     title: 'Python for Curious Minds',
-  //     author: 'Maya Patel',
-  //     category: 'Technology',
-  //     price: 28,
-  //     rating: 4.7,
-  //     reviews: 198,
-  //     status: 'New',
-  //     coverGradient: 'linear-gradient(135deg, #e9d5ff 0%, #a78bfa 100%)',
-  //     shortLabel: 'PM',
-  //   },
-  //   {
-  //     id: 4,
-  //     title: 'Quiet Leadership',
-  //     author: 'Jonas Reed',
-  //     category: 'Business',
-  //     price: 29,
-  //     rating: 4.9,
-  //     reviews: 410,
-  //     status: 'Bestseller',
-  //     coverGradient: 'linear-gradient(135deg, #fee2e2 0%, #f87171 100%)',
-  //     shortLabel: 'QL',
-  //   },
-  //   {
-  //     id: 5,
-  //     title: 'The Long View',
-  //     author: 'Nina Foster',
-  //     category: 'History',
-  //     price: 26,
-  //     rating: 4.6,
-  //     reviews: 158,
-  //     status: 'New',
-  //     coverGradient: 'linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%)',
-  //     shortLabel: 'LV',
-  //   },
-  //   {
-  //     id: 6,
-  //     title: 'Clever Habits',
-  //     author: 'Rafael Quinn',
-  //     category: 'Self-Help',
-  //     price: 21,
-  //     rating: 4.8,
-  //     reviews: 289,
-  //     status: 'Featured',
-  //     coverGradient: 'linear-gradient(135deg, #cffafe 0%, #22d3ee 100%)',
-  //     shortLabel: 'CH',
-  //   },
-  // ];
 }

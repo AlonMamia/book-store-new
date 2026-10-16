@@ -8,5 +8,5 @@ export interface RegisterRequest {
   lastName: string;
   // phoneNumber: string;
   // address: string;
-  dateOfBirth: string;
+  dateOfBirth: Date;
 }

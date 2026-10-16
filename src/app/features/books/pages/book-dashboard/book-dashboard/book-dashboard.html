@@ -1,17 +1,54 @@
 @if (userState.isAuthenticated()) {
   <span>
-  Hello {{userState.user()?.firstName}}
-</span>
+    Hello {{userState.user()?.firstName}}
+  </span>
 }
-  <button pButton (click)="logout()" >logout</button>
+<button pButton (click)="logout()">logout</button>
 
+<form (ngSubmit)="handleSubmit()" class="book-search-container">
+  <label for="searchQuery">search</label>
+  <input pInputText type="text" [(ngModel)]="searchQuery" name="searchQuery" />
 
+  <label for="category">category</label>
+  <p-select placeholder="category" [(ngModel)]="category" name="category" [options]="categories" />
 
+  <label for="minPrice">minPrice</label>
+  <input pInputText type="number" [(ngModel)]="minPrice" name="minPrice" placeholder="min price" />
 
+  <label for="maxPrice">maxPrice</label>
+  <input pInputText type="number" [(ngModel)]="maxPrice" name="maxPrice" placeholder="max price" />
 
-<!--<div>-->
-<!--  @for (book of books; track book.id) {-->
-<!--    <book-list-item [book]="book" />-->
-<!--  }-->
+  <label>
+    <input type="checkbox" [(ngModel)]="availableOnly" name="availableOnly" />
+    availableOnly
+  </label>
 
-<!--</div>-->
+  <label for="sort by">sortBy</label>
+  <p-select  [(ngModel)]="sortBy" name="sortBy" [options]="sortCategories" />
+
+  <button pButton label="Add Book" type="submit">submit</button>
+</form>
+
+@if (loading()) {
+  <p>Loading books...</p>
+}
+
+@if (errorMessage(); as error) {
+  <p class="error-message">{{ error }}</p>
+}
+
+@if (!(loading() || errorMessage()) && books() ) {
+  @for (book of books(); track book.id) {
+    <book-list-item [book]="book" />
+  } @empty {
+    <p>No books found</p>
+  }
+
+  <p-paginator
+    [first]="page() * size()"
+    [rows]="size()"
+    [totalRecords]="pageResponse()?.totalElements"
+    [rowsPerPageOptions]="[5, 10, 20, 50]"
+    (onPageChange)="onPageChange($event)"
+  />
+}
