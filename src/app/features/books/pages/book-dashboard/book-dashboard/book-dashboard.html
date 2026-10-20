@@ -29,26 +29,33 @@
   <button pButton label="Add Book" type="submit">submit</button>
 </form>
 
-@if (loading()) {
-  <p>Loading books...</p>
-}
-
 @if (errorMessage(); as error) {
-  <p class="error-message">{{ error }}</p>
+  <p class="error-message" role="alert">{{ error }}</p>
 }
 
-@if (!(loading() || errorMessage()) && books() ) {
-  @for (book of books(); track book.id) {
-    <book-list-item [book]="book" />
-  } @empty {
-    <p>No books found</p>
+@if (loading() && !pageResponse()) {
+  <p>Loading books...</p>
+} @else if (pageResponse() && !errorMessage()) {
+  @if (loading()) {
+    <p class="refreshing-indicator" aria-live="polite">Updating results&hellip;</p>
   }
 
+  <div class="book-grid">
+    @for (book of books(); track book.id) {
+      <book-list-item [book]="book" />
+    } @empty {
+      <p>No books found</p>
+    }
+  </div>
+
   <p-paginator
+    class="book-paginator"
     [first]="page() * size()"
     [rows]="size()"
-    [totalRecords]="pageResponse()?.totalElements"
-    [rowsPerPageOptions]="[5, 10, 20, 50]"
+    [totalRecords]="totalElements()"
+    [rowsPerPageOptions]="[10, 20, 50]"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} books"
     (onPageChange)="onPageChange($event)"
   />
 }

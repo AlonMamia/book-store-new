@@ -126,10 +126,16 @@ export class BookDashboard {
   readonly pageResponse = toSignal(this.pageResponse$, { initialValue: null });
 
   readonly books = computed(() => this.pageResponse()?.content);
+  readonly totalElements = computed(() => this.pageResponse()?.totalElements ?? 0);
+  readonly totalPages = computed(() => this.pageResponse()?.totalPages ?? 0);
 
   onPageChange(event: PaginatorState): void {
     const newSize = event.rows ?? this.size();
     const newPage = event.page ?? 0;
+
+    if (newPage < 0 || newSize <= 0) {
+      return;
+    }
 
     this.page.set(newPage);
     this.size.set(newSize);

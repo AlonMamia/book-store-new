@@ -6,4 +6,5 @@ export type Book = {
   author: string;
   category: string;
   price: number;
+  stockQuantity: number;
 }
