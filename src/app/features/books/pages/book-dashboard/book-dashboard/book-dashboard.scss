@@ -5,3 +5,33 @@
   width: 10rem;
   gap: 2rem;
 }
+
+.refreshing-indicator {
+  opacity: 0.7;
+  font-size: 0.875rem;
+}
+
+.book-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.book-paginator {
+  display: block;
+  margin-top: 1.5rem;
+
+  ::ng-deep .p-paginator {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .book-paginator ::ng-deep .p-paginator-current {
+    width: 100%;
+    text-align: center;
+    order: -1;
+  }
+}
